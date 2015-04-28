@@ -41,46 +41,46 @@ def usage():
 
 def clientThread(conn, host, remoteport):
     while 1:
-        data = conn.recv(BUFSIZE)
-        if data.endswith('exit'):
-            break
+        data = conn.recv(BUFSIZE)   # wait for client's COMMAND from user
+        if data.endswith('exit'):   # if COMMAND 'exit'
+            break                   # end, GO TO >>>print '> Done with', host, 'port', remoteport
         else:
-            print '\t', host, '(%s): %s' % (remoteport,data)
+            print '\t', host, '(%s): %s' % (remoteport,data)    # else not 'exit', show command to SERVER's SCREEN
             
-            if data=='ls':
-                filelist = os.listdir(os.getcwd())
-                for filename in filelist:
-                    data = '{:<30}'.format('\t'+filename)+'File Size: '+'{:>15,.2f}'.format(os.stat(filename)[stat.ST_SIZE]/956.0)+' KB'
-                    conn.sendall(data)
-                conn.sendall('END')
+            if data=='ls':          # if LS
+                filelist = os.listdir(os.getcwd())  # get location from "os.getcwd()" and use "os.listdir()" to get filelist from that location
+                for filename in filelist:           # each loop is 1 file on FILELIST keep in variable name 'filename'
+                    data = '{:<30}'.format('\t'+filename)+'File Size: '+'{:>15,.2f}'.format(os.stat(filename)[stat.ST_SIZE]/956.0)+' KB' # create information of that filename
+                    conn.sendall(data)              # SEND the created information from before
+                conn.sendall('END')                 # end FOR loop, send KEYWORD 'END'
         
-            elif data.startswith('get '):
-                filename = data[4:len(data)]
-                if os.path.isfile(filename):
-                    f = open(filename, 'rb')
-                    for data in f:
-                        conn.sendall(data)
+            elif data.startswith('get '):           # if COMMAND start with 'get '
+                filename = data[4:len(data)]        # seperate FILENAME from COMMAND
+                if os.path.isfile(filename):        # if FILENAME exist
+                    f = open(filename, 'rb')        # open file to read
+                    for data in f:                  # read for each piece of DATA in file, 1 piece of data for 1 loop
+                        conn.sendall(data)          # send piece of DATA
                     f.close()
-                    conn.sendall('EndOfFiles')
+                    conn.sendall('EndOfFiles')      # send KEYWORD to client to say end downloading
                 else:
-                    conn.sendall('File not found.')
-
-            elif data.startswith('put '):
-                filename = data[4:len(data)]
-                f = open(filename, 'wb')
-                conn.sendall('ready')
-                while 1:
-                    data = conn.recv(BUFSIZE)
-                    if data.endswith('EndOfFiles'):
-                        data = data[:-10]
-                        f.write(data)
+                    conn.sendall('File not found.') # there is no file, send KEYWORD
+                        
+            elif data.startswith('put '):           # if COMMAND start with 'put '
+                filename = data[4:len(data)]        # separate filename from COMMAND 'put '
+                f = open(filename, 'wb')            # create file to write
+                conn.sendall('ready')               # send KEYWORD 'ready' for uploading
+                while 1:                            # repeat receive data until end
+                    data = conn.recv(BUFSIZE)       # receive 1 piece of data
+                    if data.endswith('EndOfFiles'): # if found KEYWORD 'EndOfFiles', It's end of uploading
+                        data = data[:-10]           # delete KEYWORD from data
+                        f.write(data)               # write data to file
                         break
                     else:
-                        f.write(data)
+                        f.write(data)               # write data to file
                 f.close()
 
-    print '> Done with', host, 'port', remoteport
-    conn.close()
+    print '> Done with', host, 'port', remoteport # break from "while 1:" came here
+    conn.close()                # close SOCKET connection
 
 def server():
     if len(sys.argv) > 2:           # if have argument > 2, means have PORT
@@ -128,9 +128,9 @@ def client():
         str = raw_input('>> '); # wait for command
         if str == 'lls':
             s.send(str) # send command to server
-            filelist = os.listdir(os.getcwd())  #get directory from "os.getcwd()" and use "os.listdir()" to get filelist from that directory
+            filelist = os.listdir(os.getcwd())  # get directory from "os.getcwd()" and use "os.listdir()" to get filelist from that directory
             for filename in filelist:           # each loop is 1 file on filelist keep in variable name 'filename'
-                print '{:<30}'.format('\t'+filename)+'File Size: '+'{:>15,.2f}'.format(os.stat(filename)[stat.ST_SIZE]/956.0)+' KB'         # print information about that filename
+                print '{:<30}'.format('\t'+filename)+'File Size: '+'{:>15,.2f}'.format(os.stat(filename)[stat.ST_SIZE]/956.0)+' KB' # print information about that filename
     
         elif str == 'ls':
             s.send(str) # send command to server
@@ -148,19 +148,19 @@ def client():
             if data.endswith('File not found.'):
                 print data              # print 'file not found'
             else:                       # file found
-                filename = str[4:len(str)]
-                f = open(filename, 'wb')
-                t1 = time.time()
+                filename = str[4:len(str)]      # seperate FILENAME from COMMAND 'get ...'
+                f = open(filename, 'wb')        # create file to write
+                t1 = time.time()                # record start download time
                 while 1:
-                    if data.endswith('EndOfFiles'):
-                        data = data[:-10]
-                        f.write(data)
+                    if data.endswith('EndOfFiles'): # if download all of the file
+                        data = data[:-10]           # delete KEYWORD
+                        f.write(data)               # write the rest of file data
                         break
                     else:
-                        f.write(data)
-                    data = s.recv(BUFSIZE)
-                t2 = time.time()
-                f.close()
+                        f.write(data)               # write data to file
+                    data = s.recv(BUFSIZE)          # get data from server
+                t2 = time.time()                # record end download time
+                f.close()                       # close file
                 
                 print '\tDownload file "'+filename+'" from server.'
                 print '\tStatus: COMPLETED'
@@ -168,18 +168,18 @@ def client():
                 print '\tTransfer Time: '+'{:,.2f}'.format(t2-t1)+' s'
                 print '\tDownload Throughput: '+'{:,.2f}'.format(os.stat(filename)[stat.ST_SIZE]/956.0/(t2-t1))+' KB/s'
 
-        elif str.startswith('put '):
-            filename = str[4:len(str)]
-            if os.path.isfile(filename):
-                s.send(str)
-                s.recv(BUFSIZE)
-                t1 = time.time()
-                f = open(filename, 'rb')
-                for data in f:
-                    s.sendall(data)
+        elif str.startswith('put '):        # command start with 'put '
+            filename = str[4:len(str)]      # seperate FILENAME from COMMAND 'put ...'
+            if os.path.isfile(filename):    # check if file exist
+                s.send(str)                 # send COMMAND to server
+                s.recv(BUFSIZE)             # get server 'READY to upload' status
+                t1 = time.time()            # record start upload time
+                f = open(filename, 'rb')    # open file to read
+                for data in f:              # for each DATA in FILE
+                    s.sendall(data)         # SEND that piece of file to SERVER
                 f.close()
-                t2 = time.time()
-                s.sendall('EndOfFiles')
+                t2 = time.time()            # record end upload time
+                s.sendall('EndOfFiles')     # send end upload KEYWORD to server
                 print '\tUpload file "'+filename+'" to server.'
                 print '\tStatus: COMPLETED'
                 print '\tFile Size: '+'{:,.2f}'.format(os.stat(filename)[stat.ST_SIZE]/956.0)+' KB'
