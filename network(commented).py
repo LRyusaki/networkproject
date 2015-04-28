@@ -23,12 +23,12 @@ MY_PORT = 50042
 BUFSIZE = 1024
 
 def main():
-    if len(sys.argv) < 2:
-        usage()
-    if sys.argv[1] == '-s':
-        server()
-    elif sys.argv[1] == '-c':
-        client()
+    if len(sys.argv) < 2:   # if run only "python network.py" (have argument < 2)
+        usage()             # load instruction how to run
+    if sys.argv[1] == '-s': # if have "-s"
+        server()            # run function server()
+    elif sys.argv[1] == '-c':   # if have -c
+        client()                # run function client()
     else:
         usage()
 
@@ -53,7 +53,7 @@ def clientThread(conn, host, remoteport):
                     data = '{:<30}'.format('\t'+filename)+'File Size: '+'{:>15,.2f}'.format(os.stat(filename)[stat.ST_SIZE]/956.0)+' KB'
                     conn.sendall(data)
                 conn.sendall('END')
-            
+        
             elif data.startswith('get '):
                 filename = data[4:len(data)]
                 if os.path.isfile(filename):
@@ -64,7 +64,7 @@ def clientThread(conn, host, remoteport):
                     conn.sendall('EndOfFiles')
                 else:
                     conn.sendall('File not found.')
-        
+
             elif data.startswith('put '):
                 filename = data[4:len(data)]
                 f = open(filename, 'wb')
@@ -79,76 +79,76 @@ def clientThread(conn, host, remoteport):
                         f.write(data)
                 f.close()
 
-print '> Done with', host, 'port', remoteport
+    print '> Done with', host, 'port', remoteport
     conn.close()
 
 def server():
-    if len(sys.argv) > 2:
-        port = eval(sys.argv[2])
+    if len(sys.argv) > 2:           # if have argument > 2, means have PORT
+        port = eval(sys.argv[2])    # use input PORT
     else:
-        port = MY_PORT
-    
-    s = socket(AF_INET, SOCK_STREAM)
-    host = getfqdn() # Get local machine name
-    ip = gethostbyname(host)
+        port = MY_PORT              # else use default port
 
-#   import urllib2
-#   my_ip = urllib2.urlopen('http://ip.42.pl/raw').read()
+    s = socket(AF_INET, SOCK_STREAM)    # create socket with IPv4(INET) connection, socket type TCP(STREAM)
+    host = getfqdn()                    # Get local machine name
+    ip = gethostbyname(host)            # get ip from host name
 
-s.bind((host, port))
-    s.listen(5)
+    #   import urllib2
+    #   my_ip = urllib2.urlopen('http://ip.42.pl/raw').read()
+
+    s.bind((host, port))            # set IP and PORT to connect to this SOCKET
+    s.listen(5)                     # maximum client
     print '\nHOST:            ', host
     print 'IP ADDRESS:      ', ip
     print 'PORT:            ', port, '\n'
     print '>>>> Server ready...'
     while 1:
-        conn, (host, remoteport) = s.accept()
+        conn, (host, remoteport) = s.accept()   # when client connect, accept it as socket CONN
         print '> Client: %s(%s) connected.' % (host, remoteport)
-        thread.start_new_thread(clientThread, (conn, host, remoteport))
-s.close()
+        thread.start_new_thread(clientThread, (conn, host, remoteport)) # start new thread working with client that connect
+    s.close()
 
 def client():
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 3:       # if < 3 argument, no HOST no PORT
         usage()
-    host = sys.argv[2]
-    ip = gethostbyname(host)
-    if len(sys.argv) > 3:
+    host = sys.argv[2]          # pass IF means, have HOST input from user
+    ip = gethostbyname(host)    # get IP from HOST
+    if len(sys.argv) > 3:       # if user give PORT
         port = eval(sys.argv[3])
     else:
-        port = MY_PORT
-    s = socket(AF_INET, SOCK_STREAM)
-    s.connect((host, port))
+        port = MY_PORT          # else use default PORT
+    s = socket(AF_INET, SOCK_STREAM)    # create socket name 's'
+    s.connect((host, port))     # connect to server's HOST, PORT from input
     print '\n\tConnect to SERVER'
     print 'HOST SERVER:            ', host
     print 'IP ADDRESS:      ', ip
     print 'PORT SERVER:            ', port, '\n'
     print '>>>> Client ready...'
 
-while 1:
-    str = raw_input('>> ');
+    while 1:
+        str = raw_input('>> '); # wait for command
         if str == 'lls':
-            s.send(str)
-            filelist = os.listdir(os.getcwd())
-            for filename in filelist:
-                print '{:<30}'.format('\t'+filename)+'File Size: '+'{:>15,.2f}'.format(os.stat(filename)[stat.ST_SIZE]/956.0)+' KB'
-
-    elif str == 'ls':
-        s.send(str)
+            s.send(str) # send command to server
+            filelist = os.listdir(os.getcwd())  #get directory from "os.getcwd()" and use "os.listdir()" to get filelist from that directory
+            for filename in filelist:           # each loop is 1 file on filelist keep in variable name 'filename'
+                print '{:<30}'.format('\t'+filename)+'File Size: '+'{:>15,.2f}'.format(os.stat(filename)[stat.ST_SIZE]/956.0)+' KB'         # print information about that filename
+    
+        elif str == 'ls':
+            s.send(str) # send command to server
             while 1:
-                data = s.recv(BUFSIZE)
-                if data.endswith('END'):
-                    print data[:-3]
+                data = s.recv(BUFSIZE)  # receive data from server (information about file)
+                if data.endswith('END'): # data end with 'END'
+                    print data[:-3]     # delete END and print
                     break
                 else:
                     print data
 
-elif str.startswith('get '):
-    s.send(str)
-        data = s.recv(BUFSIZE)
+        elif str.startswith('get '):    # command start with 'get '
+            s.send(str)                 # send command to server
+            data = s.recv(BUFSIZE)      # receive file status if found or not found
             if data.endswith('File not found.'):
-                print data
-        else:
-            filename = str[4:len(str)]
+                print data              # print 'file not found'
+            else:                       # file found
+                filename = str[4:len(str)]
                 f = open(filename, 'wb')
                 t1 = time.time()
                 while 1:
@@ -159,7 +159,7 @@ elif str.startswith('get '):
                     else:
                         f.write(data)
                     data = s.recv(BUFSIZE)
-            t2 = time.time()
+                t2 = time.time()
                 f.close()
                 
                 print '\tDownload file "'+filename+'" from server.'
@@ -168,16 +168,16 @@ elif str.startswith('get '):
                 print '\tTransfer Time: '+'{:,.2f}'.format(t2-t1)+' s'
                 print '\tDownload Throughput: '+'{:,.2f}'.format(os.stat(filename)[stat.ST_SIZE]/956.0/(t2-t1))+' KB/s'
 
-elif str.startswith('put '):
-    filename = str[4:len(str)]
-        if os.path.isfile(filename):
-            s.send(str)
+        elif str.startswith('put '):
+            filename = str[4:len(str)]
+            if os.path.isfile(filename):
+                s.send(str)
                 s.recv(BUFSIZE)
                 t1 = time.time()
                 f = open(filename, 'rb')
                 for data in f:
                     s.sendall(data)
-            f.close()
+                f.close()
                 t2 = time.time()
                 s.sendall('EndOfFiles')
                 print '\tUpload file "'+filename+'" to server.'
@@ -188,10 +188,10 @@ elif str.startswith('put '):
             else:
                 print 'File not found.'
 
-elif str == 'exit':
-    s.send(str)
-        break
-        
+        elif str == 'exit':
+            s.send(str)
+            break
+
         else:
             print 'Error command given !'
             print '\tls - list files on server directory.'
@@ -199,8 +199,8 @@ elif str == 'exit':
             print '\tget [filename] - download files from server.'
             print '\tput [filename] - upload files to server.'
             print '\texit - end connection.'
-
-print 'end'
+                
+    print 'end'
     s.close()
 
 main()
