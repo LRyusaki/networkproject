@@ -79,7 +79,7 @@ def clientThread(conn, host, remoteport):
                         f.write(data)
                 f.close()
 
-print '> Done with', host, 'port', remoteport
+    print '> Done with', host, 'port', remoteport
     conn.close()
 
 def server():
@@ -95,7 +95,7 @@ def server():
 #   import urllib2
 #   my_ip = urllib2.urlopen('http://ip.42.pl/raw').read()
 
-s.bind((host, port))
+    s.bind((host, port))
     s.listen(5)
     print '\nHOST:            ', host
     print 'IP ADDRESS:      ', ip
@@ -105,7 +105,7 @@ s.bind((host, port))
         conn, (host, remoteport) = s.accept()
         print '> Client: %s(%s) connected.' % (host, remoteport)
         thread.start_new_thread(clientThread, (conn, host, remoteport))
-s.close()
+    s.close()
 
 def client():
     if len(sys.argv) < 3:
@@ -124,16 +124,16 @@ def client():
     print 'PORT SERVER:            ', port, '\n'
     print '>>>> Client ready...'
 
-while 1:
-    str = raw_input('>> ');
+    while 1:
+        str = raw_input('>> ');
         if str == 'lls':
             s.send(str)
             filelist = os.listdir(os.getcwd())
             for filename in filelist:
                 print '{:<30}'.format('\t'+filename)+'File Size: '+'{:>15,.2f}'.format(os.stat(filename)[stat.ST_SIZE]/956.0)+' KB'
 
-    elif str == 'ls':
-        s.send(str)
+        elif str == 'ls':
+            s.send(str)
             while 1:
                 data = s.recv(BUFSIZE)
                 if data.endswith('END'):
@@ -142,13 +142,13 @@ while 1:
                 else:
                     print data
 
-elif str.startswith('get '):
-    s.send(str)
-        data = s.recv(BUFSIZE)
+        elif str.startswith('get '):
+            s.send(str)
+            data = s.recv(BUFSIZE)
             if data.endswith('File not found.'):
                 print data
-        else:
-            filename = str[4:len(str)]
+            else:
+                filename = str[4:len(str)]
                 f = open(filename, 'wb')
                 t1 = time.time()
                 while 1:
@@ -159,7 +159,7 @@ elif str.startswith('get '):
                     else:
                         f.write(data)
                     data = s.recv(BUFSIZE)
-            t2 = time.time()
+                t2 = time.time()
                 f.close()
                 
                 print '\tDownload file "'+filename+'" from server.'
@@ -168,16 +168,16 @@ elif str.startswith('get '):
                 print '\tTransfer Time: '+'{:,.2f}'.format(t2-t1)+' s'
                 print '\tDownload Throughput: '+'{:,.2f}'.format(os.stat(filename)[stat.ST_SIZE]/956.0/(t2-t1))+' KB/s'
 
-elif str.startswith('put '):
-    filename = str[4:len(str)]
-        if os.path.isfile(filename):
-            s.send(str)
+        elif str.startswith('put '):
+            filename = str[4:len(str)]
+            if os.path.isfile(filename):
+                s.send(str)
                 s.recv(BUFSIZE)
                 t1 = time.time()
                 f = open(filename, 'rb')
                 for data in f:
                     s.sendall(data)
-            f.close()
+                f.close()
                 t2 = time.time()
                 s.sendall('EndOfFiles')
                 print '\tUpload file "'+filename+'" to server.'
@@ -188,9 +188,9 @@ elif str.startswith('put '):
             else:
                 print 'File not found.'
 
-elif str == 'exit':
-    s.send(str)
-        break
+        elif str == 'exit':
+            s.send(str)
+            break
         
         else:
             print 'Error command given !'
@@ -200,7 +200,7 @@ elif str == 'exit':
             print '\tput [filename] - upload files to server.'
             print '\texit - end connection.'
 
-print 'end'
+    print 'end'
     s.close()
 
 main()
